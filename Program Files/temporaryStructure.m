@@ -22,6 +22,7 @@ function temp = temporaryStructure(model)
     temp.lightDistance = 0; % [AU] light source distance
     temp.zen = [0; 0];  % [deg] current zenith of light location
     temp.azi = [0; 0];  % [deg] current azimuth of light location
+    temp.numPartitions = 1; % Number of partitions for PMC simulations
 
     % Surface
     temp.xS = zeros(1,nF+1); % current x-coordinates
@@ -44,6 +45,9 @@ function temp = temporaryStructure(model)
     % Spectral irradiance values for the light source
     temp.specIrrad = [];
 
+    % Bond albedo (calculated regardless of model.exitance.save)
+    temp.bondAlbedo = 0;
+    
     % Exitance information
     if model.exitance.save
         nZen = model.exitance.numZenithBins;

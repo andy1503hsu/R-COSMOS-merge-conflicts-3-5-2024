@@ -4,10 +4,12 @@ function data = R_COSMOS(model)
 %   heat transfer, and sublimation. The results are simulated given an
 %   initial surface shape and material properties.
 
-fprintf('R-COSMOS ver. 5.3\n')
+fprintf('R-COSMOS ver. 5.4\n')
 
 % Setup the R-COSMOS simulation environment
 [model, temp, data, PMC, HT, SMC, ASM] = modelSetup(model);
+
+rng shuffle
 
 % Start the simulation
 startT = tic; % simulation time
@@ -46,7 +48,7 @@ for gS = 1:model.resolution.geologicSteps % for each geologic period
                 simulationStatus(temp, model, 'RHT')
  
                 % Photon Monte Carlo (solar and thermal radiation)
-                temp = radiationSolver(temp, sData, PMC);
+                temp = radiationSolverWrapper(temp, sData, PMC);
     
                 % Heat transfer
                 temp = heatTransferSolver(temp, HT);
@@ -54,10 +56,7 @@ for gS = 1:model.resolution.geologicSteps % for each geologic period
                 % Data storage
                 data = dataStorage(temp, data, 'RHT');
             end
-    
-            %parfor iT = 1:3
-            %  disp(iT)
-            %end
+
             % Sublimation process
             % If the diurnal cycle has reached steady-state
             if stoppingCondition(temp, data, model, 'steadyState')
@@ -122,7 +121,6 @@ for gS = 1:model.resolution.geologicSteps % for each geologic period
     
         % Surface morphology
         temp = surfaceModelingSolver(temp, temp.netDisplacement, ASM);
-
         
         %[temp.xS,temp.zS] = surfaceModelling(temp,temp.netDisplacement,model.type);
         

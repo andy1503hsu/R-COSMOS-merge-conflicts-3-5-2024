@@ -1,4 +1,4 @@
-function [aData, eData] = simulatePhotons(sData, photons, PMC) %#codegen
+function [aData, eData, bondAlbedo] = simulatePhotons(sData, photons, PMC) %#codegen
     
     photonValues = photons.values;
     thermalStart = photons.thermalStart;
@@ -12,6 +12,7 @@ function [aData, eData] = simulatePhotons(sData, photons, PMC) %#codegen
        % Dummy empty variables
        aData.solar = zeros(0, 3); aData.thermal = cell(0, 1);
        eData.solar = zeros(0, 4); eData.thermal = zeros(0, 3);
+       bondAlbedo = NaN;
        return
     else % Consequently, all code past here assumes a 1st day timestep.
         snowEmitted = sum(photonValues(thermalStart:end, 9));
@@ -40,7 +41,7 @@ function [aData, eData] = simulatePhotons(sData, photons, PMC) %#codegen
         thermalPhotons.thermalStart = 1;
 
         if ~isempty(solarPhotons.values) % Solar radiation is present
-            if PMC.exitance.save && PMC.solarPhotons == PMC.exitance.sourcePhotons % Exitance case
+            if PMC.exitance.on  % Exitance case
                 [aDataSolar, eDataSolar, energyDataSolar] = planetarySimulateSolarExitance_mex(sData, solarPhotons);
             else % Non-exitance case (PMC-HT loop)
                 [aDataSolar, eDataSolar, energyDataSolar] = planetarySimulateSolar_mex(sData, solarPhotons);
@@ -54,7 +55,7 @@ function [aData, eData] = simulatePhotons(sData, photons, PMC) %#codegen
         end
 
         if ~isempty(thermalPhotons.values) % Thermal radiation is present
-            if PMC.exitance.save && PMC.thermalPhotons == PMC.exitance.thermalPhotons % Exitance case
+            if PMC.exitance.on % Exitance case
                 [aDataThermal, eDataThermal, energyDataThermal] = planetarySimulateThermalExitance_mex(sData, thermalPhotons);
             else % Non-exitance case (PMC-HT loop)
                 [aDataThermal, eDataThermal, energyDataThermal] = planetarySimulateThermal_mex(sData, thermalPhotons);
@@ -84,10 +85,12 @@ function [aData, eData] = simulatePhotons(sData, photons, PMC) %#codegen
     absorbed = energyData.absorbed;
     reflected = energyData.reflected;
     exited = energyData.exited;
+    bondAlbedo = energyDataSolar.exited / sunEmitted;
 
     fprintf("\n%30s %11.4f J\n", "Energy absorbed by snow:", absorbed)
     fprintf("%30s %11.4f J\n", "Energy absorbed by surfaces:", reflected)
     fprintf("%30s %11.4f J\n", "Energy that exited domain:", exited)
+    fprintf("%30s %11.4f\n", "Bond albedo:", bondAlbedo)
     
     % Check for energy conservation
     if abs(energyEmitted / ...
@@ -97,4 +100,3 @@ function [aData, eData] = simulatePhotons(sData, photons, PMC) %#codegen
         fprintf("%30s\n", "Energy was NOT conserved.")
     end
 end
-

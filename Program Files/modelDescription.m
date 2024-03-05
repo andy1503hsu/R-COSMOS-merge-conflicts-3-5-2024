@@ -21,6 +21,8 @@ function modelDescription(model)
     mkdir Temporary restartHead % restart head
     mkdir Temporary PMC % Photon Monte Carlo
     mkdir Temporary BMC % Blackbody Monte Carlo
+    mkdir Temporary PMC_Exitance  % Photon Monte Carlo for exitance
+    mkdir Temporary BMC_Exitance  % Blackbody Monte Carlo for exitance
     mkdir Temporary SMC % Sublimation Monte Carlo
     addpath(genpath("Temporary")) % add Temporary folder to the search path
 
@@ -32,7 +34,7 @@ function modelDescription(model)
     fprintf('  Maximum iteration days: %d\n', model.resolution.maxDays)
     fprintf('  Day steps: %d\n', model.resolution.daySteps)
     fprintf('  Day length: '); timeDisplay(timePeriod(rotationPeriod(model.body.rotation)))
-    fprintf('  Steady-state tolerance: %.2f %% \n', model.resolution.tolerance*100)
+    fprintf('  Steady-state tolerance: %.2f K \n', model.resolution.tolerance)
 
     % Orbit
     fprintf('\nOrbit\n')

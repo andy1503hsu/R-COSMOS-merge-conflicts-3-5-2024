@@ -14,9 +14,9 @@ function condition = stoppingCondition(temp, data, model, marker) %#codegen
         % Relative error in surface temperature
         relativeError = abs(actual-new);
 
-        fprintf("%35s %.3f%%\n", "Average relative error:", mean(relativeError, "all"))        
-        fprintf("%35s %.3f%%\n", "Maximum relative error:", max(relativeError, [], "all"))
-        fprintf("%35s %.3f%%\n", "Tolerance for max relative error:", model.resolution.tolerance)
+        fprintf("%35s %.3f K\n", "Average relative error:", mean(relativeError, "all"))        
+        fprintf("%35s %.3f K\n", "Maximum relative error:", max(relativeError, [], "all"))
+        fprintf("%35s %.3f K\n", "Tolerance for max relative error:", model.resolution.tolerance)
 
         % Stopping condition
         steadyState = all(all(relativeError < model.resolution.tolerance));

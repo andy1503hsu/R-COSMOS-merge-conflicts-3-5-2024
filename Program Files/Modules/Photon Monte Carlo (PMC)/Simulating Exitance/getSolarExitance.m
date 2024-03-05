@@ -7,6 +7,7 @@ function temp = getSolarExitance(temp, sData, PMC)
 
     fprintf("Running Photon Monte Carlo: Solar Exitance \n");
     startTime = tic();
+    PMC.exitance.on = true;
 
     % Get initial photon values
     PMC.solarPhotons = PMC.exitance.sourcePhotons;  % Hmm...
@@ -22,7 +23,8 @@ function temp = getSolarExitance(temp, sData, PMC)
 
     % Photon tracing
     traceStart = tic();
-    [~, eData] = simulatePhotons(sData, photons, PMC);
+    [~, eData, bondAlbedo] = simulatePhotons(sData, photons, PMC);
+    temp.bondAlbedo = bondAlbedo;
     fprintf("\n%30s %f s\n","Photon tracing time:", toc(traceStart));
 
     % Binning exitance events into exitance angular bins

@@ -57,6 +57,9 @@ function solarPhotons = getSolarPhotons(temp, PMC) %#codegen
     
     % Get solar angles at specified times
     timeNorm = launchTime / temp.time; % [0, 1]
+
+    %{
+    % Using zenith + azimuth to get solar location
     zen = timeNorm * diff(temp.zen) + temp.zen(1);
     azi = timeNorm * diff(temp.azi) + temp.azi(1);
     
@@ -64,8 +67,9 @@ function solarPhotons = getSolarPhotons(temp, PMC) %#codegen
     solarPhotons(:, 5) = -sind(zen).*cosd(azi); % [-] trajectory vector x comp
     solarPhotons(:, 6) = -sind(zen).*sind(azi); % [-] trajectory vector y comp
     solarPhotons(:, 7) = -cosd(zen); % [-] trajectory vector z comp
-    
-    %%%%%%%%% From solar path
+    %}
+
+    % From solar path
     x_comp = -(temp.lightPath(1,1) + timeNorm*diff(temp.lightPath(1, :)));
     y_comp = -(temp.lightPath(2,1) + timeNorm*diff(temp.lightPath(2, :)));
     z_comp = -(temp.lightPath(3,1) + timeNorm*diff(temp.lightPath(3, :)));
@@ -74,8 +78,7 @@ function solarPhotons = getSolarPhotons(temp, PMC) %#codegen
     solarPhotons(:, 5) = x_comp ./ len_traj; % [-] trajectory vector x comp
     solarPhotons(:, 6) = y_comp ./ len_traj; % [-] trajectory vector y comp
     solarPhotons(:, 7) = z_comp ./ len_traj; % [-] trajectory vector z comp
-    % [-] trajectory vector z comp
-
+    
     % Located-related values
     solarPhotons(:, 1) = rand(PMC.solarPhotons, 1) * max(temp.xS); % Uniformly random along width of domain
     solarPhotons(:, 2) = rand(PMC.solarPhotons, 1); % Uniformly random along unit depth

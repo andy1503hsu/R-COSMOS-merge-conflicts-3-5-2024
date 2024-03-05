@@ -40,10 +40,13 @@ function data = dataStorage(temp, data, marker) %#codegen
            % Solar photon tracing is only run on the 1st day
            data.mesh.lightAbsorption{oS, gS}(:, dS) = temp.meshLightAbsorption;
 
+           % Bond albedo
+           data.exitance.bondAlbedo(dS, oS, gS) = temp.bondAlbedo;
+
         end
-    
-        % Only save steady-state temperatures and thermal absorption
-        % Data will be continuously overwritten until the steady-state day
+
+        % Steady-state temperatures and thermal absorption
+        % Values are continuously overwritten until the steady-state day
         data.mesh.temperatures{oS, gS}(:, dS) = temp.meshTemperatures(:, 3);
         data.mesh.thermalAbsorption{oS, gS}(:, dS) = temp.meshThermalAbsorption;
 
