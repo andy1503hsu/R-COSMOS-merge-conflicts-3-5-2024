@@ -5,13 +5,13 @@ function moduleCompiler(temp, PMC, SMC)
     % Photon Monte Carlo (PMC)
     fprintf('Compiling PMC model (solar photons case)... ')
     sData = surfaceData(temp);
-    photons.values = zeros(PMC.solarPhotons, 16);
+    photons.values = zeros(PMC.solarPhotons/temp.numPartitions, 16);
     photons.thermalStart = 1;
     codegen -d Temporary/PMC planetarySimulateSolar.m -args {sData, photons}
     movefile planetarySimulateSolar_mex.* Temporary/PMC  % Format could be either .mexa64 (pwyll) or .mexw64 (?)
 
     fprintf('Compiling PMC model (thermal photons case)... ')
-    photons.values = zeros((length(temp.xS)-1)*PMC.thermalPhotons, 16);
+    photons.values = zeros((length(temp.xS)-1)*PMC.thermalPhotons/temp.numPartitions, 16);
     photons.thermalStart = 1;
     codegen -d Temporary/BMC planetarySimulateThermal.m -args {sData, photons}
     movefile planetarySimulateThermal_mex.* Temporary/BMC
@@ -20,14 +20,14 @@ function moduleCompiler(temp, PMC, SMC)
         fprintf('Compiling PMC model (solar exitance case)... ')
         photons.values = zeros(PMC.exitance.sourcePhotons, 16);
         photons.thermalStart = 1;
-        codegen -d Temporary/BMC -o planetarySimulateSolarExitance_mex planetarySimulateSolar.m -args {sData, photons}
-        movefile planetarySimulateSolarExitance_mex.* Temporary/PMC
+        codegen -d Temporary/PMC_Exitance planetarySimulateSolarExitance.m -args {sData, photons}
+        movefile planetarySimulateSolarExitance_mex.* Temporary/PMC_Exitance
 
         fprintf('Compiling PMC model (thermal exitance case)... ')
         photons.values = zeros((length(temp.xS)-1)*PMC.exitance.thermalPhotons, 16);
         photons.thermalStart = 1;
-        codegen -d Temporary/BMC -o planetarySimulateThermalExitance_mex planetarySimulateThermal.m -args {sData, photons}
-        movefile planetarySimulateThermalExitance_mex.* Temporary/BMC
+        codegen -d Temporary/BMC_Exitance planetarySimulateThermalExitance.m -args {sData, photons}
+        movefile planetarySimulateThermalExitance_mex.* Temporary/BMC_Exitance
     end
 
     % Sublimation Monte Carlo (SMC)

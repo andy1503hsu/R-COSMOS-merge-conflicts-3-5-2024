@@ -17,6 +17,9 @@ function data = dataStructure(model)
     % Steady state temperature
     data.surface.steadyStateT = zeros(dS,nF,model.resolution.maxDays,oS,gS); % [K]
 
+    % Bond albedo
+    data.exitance.bondAlbedo = zeros(dS, oS, gS);
+
     % Exitance data -- only steady state exitance is saved
     data.exitance.thermal = cell(dS, oS, gS);
     data.exitance.solar = cell(dS, oS, gS);

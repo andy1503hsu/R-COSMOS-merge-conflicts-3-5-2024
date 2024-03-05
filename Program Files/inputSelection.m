@@ -12,8 +12,9 @@ function [PMC, HT, SMC, ASM] = inputSelection(model)
     PMC.grainRadii = model.material.grainRadii; % [microns] grain radii
     PMC.solarPhotons = model.resolution.sourcePhotons; % light photons
     PMC.thermalPhotons = model.resolution.thermalPhotons; % thermal photons
-    PMC.exitance = model.exitance; % exitance parameters
     PMC.emissivity = model.material.emissivity; % emissivity
+    PMC.exitance = model.exitance; % exitance parameters
+    PMC.exitance.on = false; % 0 during PMC-HT loop, 1 during exitance runs
 
     % Heat Transfer (HT)
     HT.type = model.type; % simulation type

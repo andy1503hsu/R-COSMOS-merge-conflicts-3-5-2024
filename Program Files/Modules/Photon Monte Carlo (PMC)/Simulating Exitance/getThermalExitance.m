@@ -7,6 +7,7 @@ function temp = getThermalExitance(temp, sData, PMC)
     
     fprintf("\nRunning Photon Monte Carlo: Thermal Exitance\n");
     startTime = tic();
+    PMC.exitance.on = true;
 
     % Get initial photon values
     PMC.thermalPhotons = PMC.exitance.thermalPhotons;

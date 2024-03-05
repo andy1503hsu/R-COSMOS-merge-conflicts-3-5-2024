@@ -7,13 +7,13 @@
     addpath(genpath("Visualization")); % visualization folders
 
 %% General
-    model.filename = "Test"; % name of output file
+    model.filename = "testing"; % name of output file
     model.type = "Planetary"; % simulation type
     model.gravity = false; % mass conservation from gravity
     model.orbitalMorphology = false; % surface changes along the orbit
 
 %% Geologic Time
-    model.time.total = [1, "years"]; % total simulation time
+    model.time.total = [10, "years"]; % total simulation time
 
 %% Planetary body
     model.body.mass = "Europa"; % [kg] planetary body mass
@@ -33,11 +33,11 @@
 %% Surface
     % Shape
     model.surface.type = "sinusoidal"; % surface shape
-    model.surface.width = 0.1; % [m] shape width
-    model.surface.height = 0.5; % [m] shape height
-    model.surface.depth = 2.5; % [m] depth below trough
+    model.surface.width = 1.00; % [m] shape width
+    model.surface.height = 0.00; % [m] shape height
+    model.surface.depth = 5.00; % [m] depth below trough
     model.surface.number = 1; % number of surface replicas
-    model.surface.facets = 400; % number of facets per shape
+    model.surface.facets = 200; % number of facets per shape
     model.surface.divisions = 0; % number of divisions per facet
     model.surface.roughness = 0.00; % [%] surface roughness percentage
     model.surface.modifier = 0; % modifying factor
@@ -48,10 +48,10 @@
 
 %% Material properties
     model.material.species = "H2O"; % species
-    model.material.density = 200; % [kg/m^3] density
-    model.material.emissivity = 0.75; % emissivity
+    model.material.density = 400; % [kg/m^3] density
+    model.material.emissivity = 1; % emissivity
     model.material.grainRadii = 1000; % [microns] grain radii
-    model.material.thermalInertia = 95; % [J/m^2-K-s^0.5] thermal inertia
+    model.material.thermalInertia = 70; % [J/m^2-K-s^0.5] thermal inertia
     model.material.initialTemperature = 110; % [K] initial temperature
 
 %% Numerical resolution
@@ -61,37 +61,37 @@
     model.resolution.daySteps = 40; % [steps/day] number of day periods
 
     % Steady-state
-    model.resolution.maxDays = 15; % [day] max days to reach steady-state
-    model.resolution.tolerance = 0.1; % [K] temperature stopping tolerance
+    model.resolution.maxDays = 40; % [day] max days to reach steady-state
+    model.resolution.tolerance = 0.25; % [K] temperature stopping tolerance
 
     % Thermal radiative mesh
-    model.resolution.Hmax = 15e-0; % [m] max element side length
+    model.resolution.Hmax = 5e-1; % [m] max element side length
     model.resolution.Hgrad = 1.1; % mesh growth rate [1-2]
 
     % Number of particle bundles
-    model.resolution.sourcePhotons = 4e5; % light source photons
-    model.resolution.thermalPhotons = 1e4; % thermal photons per facet
-    model.resolution.molecules = 1e5; % molecules per facet
+    model.resolution.sourcePhotons = 2e5; % light source photons
+    model.resolution.thermalPhotons = 1e3; % thermal photons per facet
+    model.resolution.molecules = 1e4; % molecules per facet
 
 %% Exitance
     model.exitance.save = false; % save thermal/solar exitance results
     if model.exitance.save
-    
+  
+    % Exitance resolution (typically > model.resolution values)
+    model.exitance.sourcePhotons = model.resolution.sourcePhotons; % 2e6; % Light source photons
+    model.exitance.thermalPhotons = model.resolution.thermalPhotons; % Thermal photons per facet
+
     % Hemispherical angular grid for trajectory binning
     model.exitance.numZenithBins = 6; % Encompassing [0, pi/2)
     model.exitance.numAzimuthBins = 24; % Encompassing [0, 2pi)
 
     % Wavelength bounds for exitance detection
-    model.exitance.solarBounds = [0 5]; % [microns]
+    model.exitance.solarBounds = [0 3.5]; % [microns]
     model.exitance.thermalBounds = [0 300]; % [microns]
 
     % Number of uniformally spaced bins within wavelength bounds
-    model.exitance.numSolarBins = 50;
+    model.exitance.numSolarBins = 70;
     model.exitance.numThermalBins = 225;
-
-    % Exitance resolution (typically > model.resolution values)
-    model.exitance.sourcePhotons = 2e6; % Light source photons
-    model.exitance.thermalPhotons = 2e5; % Thermal photons per facet
     
     end
 

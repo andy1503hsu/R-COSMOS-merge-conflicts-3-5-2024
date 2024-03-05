@@ -1,61 +1,107 @@
-function temp = radiationSolver(temp, sData, PMC) %#codegen
-
-    fprintf('\nRunning Photon Monte Carlo: %s\n', PMC.type);
-    startTime = tic();
-
-    % Get mesh info and preallocate to-be-reused matrices
-    temp = initializePMC(temp, sData, PMC);
-
-    %% TODO: Streamline this better
-    if PMC.type == "Ark Chamber"
-        PMC = CONSTANTS_PMC(PMC);
-    end
+function temp = radiationSolver(temp, sData, PMC)
 
     % Get values of to-be-simulated photons (if any), as well as
     % the energy emitted by each facet
     [photons, energyPerFacet] = getPhotonValues(temp, sData, PMC);
+    temp.thermalEmission = energyPerFacet; % HT boundary condition
 
-    % Photon tracing
-    traceStart = tic();
-    [aData, ~] = simulatePhotons(sData, photons, PMC);
-    fprintf("\n%30s %f s\n","Photon tracing time:", toc(traceStart));
+    if temp.iter == 1  % Partitioning occurs on 1st local day
 
-    % Binning absorption events into heat transfer mesh
-    binStart = tic();
-    temp = binAbsorptionEvents(temp, aData, energyPerFacet);
-    fprintf("\n%30s %f s\n","Binning time:", toc(binStart));
+        % Reset fields in temp
+        temp.meshLightAbsorption(:) = 0;
+        temp.meshThermalAbsorption(:) = 0;
+        if temp.dayStep == 1
+            temp.thermalDistribution(:) = 0;
+        end
+        
+        cP = 1;  % Current partition number
+        bondAlbedoArray = zeros(1, cP);
+
+        while cP <= temp.numPartitions
+
+            photonsPartition.values = zeros(0, 16);
+            photonsPartition.thermalStart = 1;
+
+            fprintf("\n====== PMC Partition %d of %d ======\n", ...
+                    cP, temp.numPartitions)
+
+            if size(photons.values, 1) > 0
+
+                % Partition solar photons
+                if photons.thermalStart > 1
+                    % Solar photons per partition
+                    sPP = PMC.solarPhotons/temp.numPartitions;
+                    solarPhotonIndices = sPP*(cP-1)+1:sPP*cP;
+                else
+                    solarPhotonIndices = [];
+                end
+                solarPhotons = photons.values(solarPhotonIndices, :);
     
-    % Save exitance data -- see "TO FIX" for explanation
-    %temp = saveExitanceData(temp, eData, inPMC);
+                % Partition thermal photons
+                if temp.dayStep == 1
+                    % Thermal photons per partition per facet
+                    tPP = PMC.thermalPhotons/temp.numPartitions;
+                    thermalPhotonIndices = zeros(1, tPP*length(sData.areaFacet));
+                    for i = 1:length(sData.areaFacet)
+                        start_i = photons.thermalStart + (i-1)*PMC.thermalPhotons + tPP*(cP-1);
+                        end_i = start_i + tPP - 1;
+                        thermalPhotonIndices((i-1)*tPP+1:i*tPP) = start_i:end_i;
+                    end
+                    % Every partition gets an equal number of thermal
+                    % photons from each facet
+                else
+                    thermalPhotonIndices = [];
+                end
+                thermalPhotons = photons.values(thermalPhotonIndices, :);
     
-    fprintf("%30s %f s\n\n","Completion time:", toc(startTime));
+                photonsPartition.values = [solarPhotons; thermalPhotons];
+                photonsPartition.thermalStart = size(solarPhotons, 1) + 1;
+            end  % End of partitioning prep
+
+            % Photon tracing
+            traceStart = tic();
+            [aData, ~, bondAlbedo] = simulatePhotons(sData, photonsPartition, PMC);
+            bondAlbedoArray(cP) = bondAlbedo;
+            fprintf("\n%30s %f s\n","Photon tracing time:", toc(traceStart));
+
+            % Binning absorption events into heat transfer mesh
+            binStart = tic();
+            binnedData = binAbsorptionEvents(temp, aData, energyPerFacet, cP);                
+            temp.meshLightAbsorption = temp.meshLightAbsorption + binnedData.meshLightAbsorption;
+            if temp.dayStep == 1
+                temp.thermalDistribution = temp.thermalDistribution + binnedData.thermalDistribution;
+                temp.meshThermalAbsorption = temp.meshThermalAbsorption + binnedData.meshThermalAbsorption;
+            elseif cP == 1  % Prevent duplicate thermal absorption data
+                temp.meshThermalAbsorption = binnedData.meshThermalAbsorption;
+            end
+            fprintf("\n%30s %f s\n","Binning time:", toc(binStart));
+
+            cP = cP + 1;
+
+            if temp.dayStep > 1 && size(photons.values, 1) == 0
+                break
+            end
+        end  % End of partitioning while loop
+
+        % Cache solar results of 1st local day
+        temp.prevSolarAbsorption(:, temp.dayStep) = temp.meshLightAbsorption;
+        temp.bondAlbedo = mean(bondAlbedoArray);
+        
+    else  % No partitioning after 1st local day
+
+        % Photon tracing
+        traceStart = tic();
+        [aData, ~, bondAlbedo] = simulatePhotons(sData, photons, PMC);
+        temp.bondAlbedo = bondAlbedo;
+        fprintf("\n%30s %f s\n","Photon tracing time:", toc(traceStart));
+        
+        % Binning absorption events into heat transfer mesh
+        binStart = tic();
+        binnedData = binAbsorptionEvents(temp, aData, energyPerFacet);
+        temp.meshLightAbsorption = binnedData.meshLightAbsorption;
+        temp.meshThermalAbsorption = binnedData.meshThermalAbsorption;
+        fprintf("\n%30s %f s\n","Binning time:", toc(binStart));
+
+    end
+            
 end
-
-%% TO FIX:
-    % Ultimately, we want to save both thermal and solar exitance/spectra
-    % data.
-    % See getThermalExitance() for thermal photon simulation after
-    % temperatures have reached a steady state. This has been completed.
-
-    % See getSolarExitance() for solar photon simulation. However, work
-    % has NOT been done yet to determine the optimal # of wavelength bins
-    % as well as wavelength bounds of the solar spectrum. The # of angular
-    % bins will likely be the same as thermal simulations for the sake of
-    % consistency, but # of wavelength bins and bounds is independent. More
-    % work has to be done here.
-
-    % PROBLEM: When to simulate solar exitance data? During the simulations
-    % solar exitance *is* simulated, but given experience with thermal the
-    % # of photons needed for resolved exitance >>> # of photons needed for
-    % resolved internal heat sources.
-
-    % For thermal, this issue is superseded since thermal exitance is only
-    % meaningful for steady-state diurnal temperatures, so a second run of
-    % thermal photons is required even without this resolution dilemma
-    % (and the second run can simply have a much higher # of thermal
-    % photons). 
-
-    % For solar, it may be more prudent to run a very very fine simulation
-    % from the get-go and just bite the (potentially signficantly) longer
-    % computational time, rather than a low-resolution simulation followed
-    % by a high-resolution simulation. Will talk to Antonio about this.

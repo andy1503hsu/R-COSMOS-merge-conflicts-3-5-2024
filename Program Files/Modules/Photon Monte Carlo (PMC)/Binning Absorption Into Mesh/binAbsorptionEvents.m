@@ -1,6 +1,4 @@
-function temp = binAbsorptionEvents(temp, aData, energyPerFacet)
-
-    temp.thermalEmission = energyPerFacet; % HT boundary condition
+function binnedData = binAbsorptionEvents(temp, aData, energyPerFacet, cP)
 
     if temp.iter == 1  % First local day
         
@@ -11,41 +9,35 @@ function temp = binAbsorptionEvents(temp, aData, energyPerFacet)
         numWorkers = gcp().NumWorkers;
 
         if size(aData.solar, 1) == 0  % No solar absorption events
-            temp.meshLightAbsorption = zeros(size(elements, 1), 1);
-            temp.prevSolarAbsorption(:, temp.dayStep) = zeros(size(elements, 1), 1);
+            binnedData.meshLightAbsorption = zeros(size(elements, 1), 1);
         else
             aEvents3D = padAbsorptionEvents(aData.solar, numWorkers);
             energyInMesh = binParallelized(aEvents3D, nodes, elements);
-
-            temp.meshLightAbsorption = energyInMesh;
-            temp.prevSolarAbsorption(:, temp.dayStep) = energyInMesh;
+            binnedData.meshLightAbsorption = energyInMesh;
         end
 
         if temp.dayStep == 1 % Thermal radiation was also simulated
             energyInMesh = binParallelized(aData.thermal, nodes, elements);
-            temp.thermalDistribution = energyInMesh ./ energyPerFacet';
-            temp.meshThermalAbsorption = sum(energyInMesh, 2);
-        else % Use percentage distribution to get thermal absorption
+            binnedData.thermalDistribution = energyInMesh ./ energyPerFacet';
+            binnedData.meshThermalAbsorption = sum(energyInMesh, 2);
+        elseif cP == 1 % Use percentage distribution to get thermal absorption
             fprintf("\n%30s %11.4f J\n", "Thermal energy emitted:", sum(energyPerFacet))
             energyInMesh = sum(temp.thermalDistribution .* energyPerFacet', 2); 
             fprintf("%30s %11.4f J %-20s\n", "Thermal energy absorbed:", sum(energyInMesh), "(from percentage distribution)")
-            temp.meshThermalAbsorption = energyInMesh;
+            binnedData.meshThermalAbsorption = energyInMesh;
         end
         
     
     else % Not the first day, results will be reused
 
-        temp.meshLightAbsorption = temp.prevSolarAbsorption(:, temp.dayStep);
+        binnedData.meshLightAbsorption = temp.prevSolarAbsorption(:, temp.dayStep);
         fprintf("\n%30s %11.4f J %-20s \n", "Solar energy absorbed:", sum(temp.meshLightAbsorption), "(from day 1)")
         
         fprintf("%30s %11.4f J\n", "Thermal energy emitted:", sum(energyPerFacet))
         energyInMesh = sum(temp.thermalDistribution .* energyPerFacet', 2); 
         fprintf("%30s %11.4f J %-20s\n", "Thermal energy absorbed:", sum(energyInMesh), "(from percentage distribution)")         
-        temp.meshThermalAbsorption = energyInMesh;
+        binnedData.meshThermalAbsorption = energyInMesh;
     
     end
-    %{
-    testSolar = binningQuadTree(absorptionData.solar, nodes, elements, 1e7);
-    testSnow = binningQuadTree(absorptionData.snow, nodes, elements, 1e7);
-    %}
+
 end
